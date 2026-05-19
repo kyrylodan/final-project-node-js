@@ -4,6 +4,9 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/SingIn.ts";
 import type { IManagerActionInfoResponse } from "../models/IManager.ts";
 
+const CYRILLIC_REGEX = /[А-Яа-яІіЇїЄєҐґ]/;
+const LATIN_PASSWORD_REGEX = /^[\u0021-\u007E]+$/;
+
 export const ManagerActionPage = () => {
     const { token = "" } = useParams();
     const [actionInfo, setActionInfo] = useState<IManagerActionInfoResponse | null>(null);
@@ -13,6 +16,10 @@ export const ManagerActionPage = () => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({
+        password: "",
+        confirmPassword: "",
+    });
 
     useEffect(() => {
         const loadActionInfo = async () => {
@@ -35,22 +42,43 @@ export const ManagerActionPage = () => {
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        const normalizedPassword = password.trim();
+        const nextFieldErrors = {
+            password: "",
+            confirmPassword: "",
+        };
 
-        if (password.trim().length < 4) {
-            setError("Password must contain at least 4 characters");
-            return;
+        if (normalizedPassword.length < 4) {
+            nextFieldErrors.password = "Password must contain at least 4 characters";
+        }
+
+        if (
+            normalizedPassword &&
+            (CYRILLIC_REGEX.test(normalizedPassword) || !LATIN_PASSWORD_REGEX.test(normalizedPassword))
+        ) {
+            nextFieldErrors.password =
+                "Password must contain only Latin letters, numbers, and symbols";
         }
 
         if (password !== confirmPassword) {
-            setError("Passwords do not match");
+            nextFieldErrors.confirmPassword = "Passwords do not match";
+        }
+
+        if (nextFieldErrors.password || nextFieldErrors.confirmPassword) {
+            setFieldErrors(nextFieldErrors);
+            setError("");
             return;
         }
 
         try {
             setSubmitting(true);
             setError("");
+            setFieldErrors({
+                password: "",
+                confirmPassword: "",
+            });
             const { data } = await api.post<{ message: string }>(`/auth/activate/${token}`, {
-                password,
+                password: normalizedPassword,
             });
             setSuccessMessage(data.message);
         } catch (requestError: any) {
@@ -79,21 +107,43 @@ export const ManagerActionPage = () => {
                         <label className="action-field">
                             <span>Password</span>
                             <input
-                                onChange={(event) => setPassword(event.target.value)}
+                                onChange={(event) => {
+                                    setPassword(event.target.value);
+                                    setFieldErrors((current) => ({
+                                        ...current,
+                                        password: "",
+                                    }));
+                                    setError("");
+                                }}
                                 placeholder="Password"
                                 type="password"
                                 value={password}
                             />
+                            {fieldErrors.password && (
+                                <span className="action-field-error">{fieldErrors.password}</span>
+                            )}
                         </label>
 
                         <label className="action-field">
                             <span>Confirm password</span>
                             <input
-                                onChange={(event) => setConfirmPassword(event.target.value)}
+                                onChange={(event) => {
+                                    setConfirmPassword(event.target.value);
+                                    setFieldErrors((current) => ({
+                                        ...current,
+                                        confirmPassword: "",
+                                    }));
+                                    setError("");
+                                }}
                                 placeholder="Confirm password"
                                 type="password"
                                 value={confirmPassword}
                             />
+                            {fieldErrors.confirmPassword && (
+                                <span className="action-field-error">
+                                    {fieldErrors.confirmPassword}
+                                </span>
+                            )}
                         </label>
 
                         {error && <p className="action-state action-state--error">{error}</p>}

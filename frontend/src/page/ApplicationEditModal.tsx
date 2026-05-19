@@ -19,7 +19,6 @@ interface ApplicationEditModalProps {
     onClose: () => void;
     onInputChange: (field: keyof IApplicationEditForm, value: string) => void;
     onNewGroupNameChange: (value: string) => void;
-    onSelectGroup: () => void;
     onSubmit: () => void;
 }
 
@@ -33,31 +32,39 @@ export const ApplicationEditModal = ({
     onClose,
     onInputChange,
     onNewGroupNameChange,
-    onSelectGroup,
     onSubmit,
 }: ApplicationEditModalProps) => (
     <div className="application-modal-backdrop" onClick={onClose}>
         <div className="application-modal" onClick={(event) => event.stopPropagation()}>
             <div className="application-modal-grid">
                 <div className="application-modal-field">
-                    <span>Group</span>
+                    <span>Existing groups</span>
+                    <select
+                        onChange={(event) => onInputChange("group", event.target.value)}
+                        value={editForm.group}
+                    >
+                        <option value="">No group</option>
+                        {groupOptions.map((group) => (
+                            <option key={group} value={group}>
+                                {group}
+                            </option>
+                        ))}
+                    </select>
+                    {!groupOptions.length && (
+                        <span className="application-field-hint">No groups created yet</span>
+                    )}
+                </div>
+
+                <div className="application-modal-field">
+                    <span>New group</span>
                     <div className="application-group-add">
                         <input
-                            list="application-groups"
                             onChange={(event) => onNewGroupNameChange(event.target.value)}
-                            placeholder="Group"
+                            placeholder="New group name"
                             value={newGroupName}
                         />
-                        <datalist id="application-groups">
-                            {groupOptions.map((group) => (
-                                <option key={group} value={group} />
-                            ))}
-                        </datalist>
                         <button onClick={onAddGroup} type="button">
                             Add
-                        </button>
-                        <button onClick={onSelectGroup} type="button">
-                            Select
                         </button>
                     </div>
                     {formErrors.newGroup && (
@@ -89,6 +96,9 @@ export const ApplicationEditModal = ({
                         onChange={(event) => onInputChange("name", event.target.value)}
                         value={editForm.name}
                     />
+                    {formErrors.name && (
+                        <span className="application-field-error">{formErrors.name}</span>
+                    )}
                 </label>
 
                 <label className="application-modal-field">
@@ -108,6 +118,9 @@ export const ApplicationEditModal = ({
                         onChange={(event) => onInputChange("surname", event.target.value)}
                         value={editForm.surname}
                     />
+                    {formErrors.surname && (
+                        <span className="application-field-error">{formErrors.surname}</span>
+                    )}
                 </label>
 
                 <label className="application-modal-field">
@@ -124,6 +137,7 @@ export const ApplicationEditModal = ({
                 <label className="application-modal-field">
                     <span>Email</span>
                     <input
+                        type="email"
                         onChange={(event) => onInputChange("email", event.target.value)}
                         value={editForm.email}
                     />
@@ -182,6 +196,7 @@ export const ApplicationEditModal = ({
                 <label className="application-modal-field">
                     <span>Age</span>
                     <input
+                        inputMode="numeric"
                         onChange={(event) => onInputChange("age", event.target.value)}
                         value={editForm.age}
                     />

@@ -474,12 +474,8 @@ body {
 
 .application-group-add {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
-}
-
-.application-group-add input {
-  grid-column: 1 / -1;
 }
 
 .application-group-add button {
@@ -493,6 +489,11 @@ body {
   padding: 0 12px;
   cursor: pointer;
   line-height: 1;
+}
+
+.application-field-hint {
+  font-size: 11px;
+  color: #64748b;
 }
 
 .application-field-error {
@@ -921,6 +922,20 @@ body {
   border-color: #4caf50;
 }
 
+.admin-field-error {
+  font-size: 12px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.admin-modal-error {
+  margin: 16px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1027,6 +1042,17 @@ body {
   justify-content: flex-end;
 }
 
+.manager-card__admin-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #166534;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .manager-action-button {
   border: none;
   border-radius: 8px;
@@ -1099,6 +1125,12 @@ body {
 
 .action-field input:focus {
   border-color: #4caf50;
+}
+
+.action-field-error {
+  font-size: 12px;
+  color: #b91c1c;
+  font-weight: 600;
 }
 
 .action-submit {

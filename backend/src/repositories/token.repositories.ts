@@ -8,5 +8,9 @@ class TokenRepository {
     public async findByParams(params: Partial<IToken>): Promise<IToken | null> {
         return await Token.findOne(params);
     }
+
+    public async updateById(id: string, dto: Partial<IToken>): Promise<IToken | null> {
+        return await Token.findByIdAndUpdate(id, { $set: dto }, { new: true });
+    }
 }
 export const tokenRepository = new TokenRepository();

@@ -33,6 +33,8 @@ const SORTABLE_FIELDS = [
 ] as const;
 const DEFAULT_SORT_BY = "created_at";
 const DEFAULT_SORT_ORDER = "desc";
+const PERSON_NAME_REGEX = /^[\p{L}]+(?:[ '-][\p{L}]+)*$/u;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
 
 type SortableField = (typeof SORTABLE_FIELDS)[number];
 type SortOrder = "asc" | "desc";
@@ -496,9 +498,7 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
             "group",
         ] as const;
 
-        const updatePayload: Record<string, unknown> = {
-            manager: userSurname,
-        };
+        const updatePayload: Record<string, unknown> = {};
 
         for (const field of editableFields) {
             if (!(field in req.body)) {
@@ -508,6 +508,27 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
             const value = req.body[field];
 
             if (["age", "sum", "alreadyPaid", "already_paid"].includes(field)) {
+                if (field === "age") {
+                    if (value === "" || value === null || value === undefined) {
+                        throw new ApiError("Age is required", 400);
+                    }
+
+                    const normalizedValue = String(value).trim();
+
+                    if (!/^\d+$/.test(normalizedValue)) {
+                        throw new ApiError("Age must be numeric", 400);
+                    }
+
+                    const numericValue = Number(normalizedValue);
+
+                    if (numericValue < 1 || numericValue > 120) {
+                        throw new ApiError("Age must be between 1 and 120", 400);
+                    }
+
+                    updatePayload[field] = numericValue;
+                    continue;
+                }
+
                 if (value === "" || value === null || value === undefined) {
                     updatePayload[field] = null;
                     continue;
@@ -524,11 +545,31 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
             }
 
             if (value === null || value === undefined) {
+                if (field === "name" || field === "surname" || field === "email") {
+                    throw new ApiError(
+                        `${field === "name" ? "Name" : field === "surname" ? "Surname" : "Email"} is required`,
+                        400
+                    );
+                }
+
                 updatePayload[field] = "";
                 continue;
             }
 
             const normalizedValue = String(value).trim();
+
+            if (field === "name" || field === "surname") {
+                if (!normalizedValue) {
+                    throw new ApiError(`${field === "name" ? "Name" : "Surname"} is required`, 400);
+                }
+
+                if (!PERSON_NAME_REGEX.test(normalizedValue)) {
+                    throw new ApiError(
+                        `${field === "name" ? "Name" : "Surname"} must contain only letters`,
+                        400
+                    );
+                }
+            }
 
             if (
                 field === "status" &&
@@ -562,8 +603,14 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
                 throw new ApiError("Invalid course format value", 400);
             }
 
-            if (field === "email" && normalizedValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedValue)) {
-                throw new ApiError("Invalid email value", 400);
+            if (field === "email") {
+                if (!normalizedValue) {
+                    throw new ApiError("Email is required", 400);
+                }
+
+                if (!EMAIL_REGEX.test(normalizedValue)) {
+                    throw new ApiError("Invalid email value", 400);
+                }
             }
 
             if (field === "phone" && normalizedValue && !/^\d{10,15}$/.test(normalizedValue)) {
@@ -572,6 +619,11 @@ export const updateApplication = async (req: Request, res: Response, next: NextF
 
             updatePayload[field] = normalizedValue;
         }
+
+        const nextStatus = String(
+            updatePayload.status ?? application.status ?? ""
+        ).trim();
+        updatePayload.manager = nextStatus === "New" ? null : userSurname;
 
         const updatedApplication = await Application.findByIdAndUpdate(
             applicationId,

@@ -1,9 +1,9 @@
 import { Navigate, Outlet } from "react-router-dom";
 
-import { clearAuthStorage, getStoredUser } from "../utils/auth.ts";
+import { clearAuthStorage, getAccessToken, getStoredUser } from "../utils/auth.ts";
 
 export const ProtectedRoute = () => {
-    const token = localStorage.getItem("token");
+    const token = getAccessToken();
     const user = getStoredUser();
     const isLegacyRoleId = typeof user?.role === "string" && /^[a-f\d]{24}$/i.test(user.role);
 

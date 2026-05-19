@@ -160,9 +160,9 @@ const buildEditPayload = (form: IApplicationEditForm) => ({
     group: form.group.trim(),
 });
 
+const PERSON_NAME_REGEX = /^[\p{L}]+(?:[ '-][\p{L}]+)*$/u;
 const validateOptionalNumber = (value: string) => value === "" || /^\d+$/.test(value.trim());
-
-const validateOptionalEmail = (value: string) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+const validateEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(value.trim());
 
 const validateOptionalPhone = (value: string) => value === "" || /^\d{10,15}$/.test(value.trim());
 
@@ -177,8 +177,26 @@ const getSortOrder = (value: string | null): ApplicationsSortOrder =>
 
 const validateEditForm = (editForm: IApplicationEditForm): IApplicationFormErrors => {
     const errors: IApplicationFormErrors = {};
+    const normalizedName = editForm.name.trim();
+    const normalizedSurname = editForm.surname.trim();
+    const normalizedEmail = editForm.email.trim();
+    const normalizedAge = editForm.age.trim();
 
-    if (!validateOptionalEmail(editForm.email)) {
+    if (!normalizedName) {
+        errors.name = "Name is required";
+    } else if (!PERSON_NAME_REGEX.test(normalizedName)) {
+        errors.name = "Name must contain only letters";
+    }
+
+    if (!normalizedSurname) {
+        errors.surname = "Surname is required";
+    } else if (!PERSON_NAME_REGEX.test(normalizedSurname)) {
+        errors.surname = "Surname must contain only letters";
+    }
+
+    if (!normalizedEmail) {
+        errors.email = "Email is required";
+    } else if (!validateEmail(normalizedEmail)) {
         errors.email = "Invalid email";
     }
 
@@ -186,8 +204,16 @@ const validateEditForm = (editForm: IApplicationEditForm): IApplicationFormError
         errors.phone = "Phone must contain 10-15 digits";
     }
 
-    if (!validateOptionalNumber(editForm.age)) {
+    if (!normalizedAge) {
+        errors.age = "Age is required";
+    } else if (!validateOptionalNumber(normalizedAge)) {
         errors.age = "Age must be numeric";
+    } else {
+        const age = Number(normalizedAge);
+
+        if (age < 1 || age > 120) {
+            errors.age = "Age must be between 1 and 120";
+        }
     }
 
     if (!validateOptionalNumber(editForm.sum)) {
@@ -548,41 +574,6 @@ export const Application = () => {
         }));
     };
 
-    const handleSelectGroup = () => {
-        const trimmedGroupName = newGroupName.trim();
-
-        if (!trimmedGroupName) {
-            setFormErrors((current) => ({
-                ...current,
-                newGroup: "Enter a group name",
-            }));
-            return;
-        }
-
-        const matchedGroup = groupOptions.find(
-            (group) => group.toLowerCase() === trimmedGroupName.toLowerCase()
-        );
-
-        if (!matchedGroup) {
-            setFormErrors((current) => ({
-                ...current,
-                newGroup: "Group does not exist",
-            }));
-            return;
-        }
-
-        setEditForm((current) => ({
-            ...current,
-            group: matchedGroup,
-        }));
-        setNewGroupName(matchedGroup);
-        setFormErrors((current) => ({
-            ...current,
-            newGroup: "",
-            group: "",
-        }));
-    };
-
     const handleEditSubmit = async () => {
         if (!editingApplicationId) {
             return;
@@ -764,7 +755,6 @@ export const Application = () => {
                     onClose={handleCloseEditModal}
                     onInputChange={handleEditInputChange}
                     onNewGroupNameChange={handleNewGroupNameChange}
-                    onSelectGroup={handleSelectGroup}
                     onSubmit={handleEditSubmit}
                 />
             )}

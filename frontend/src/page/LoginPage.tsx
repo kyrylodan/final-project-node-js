@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import {api} from "../api/SingIn.ts";
+import { getAccessToken, storeAuthSession } from "../utils/auth.ts";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const LoginPage = () => {
     const navigate = useNavigate();
@@ -8,21 +11,28 @@ export const LoginPage = () => {
     const [password, setPassword] = useState("");
     const [message, setMessage] = useState("");
 
-    if (localStorage.getItem("token")) {
+    if (getAccessToken()) {
         return <Navigate to="/applications?page=1" replace />;
     }
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        const normalizedEmail = email.trim();
+
+        if (!EMAIL_REGEX.test(normalizedEmail)) {
+            setMessage("Invalid email");
+            return;
+        }
+
+        setMessage("");
 
         try {
-            const response = await api.post("/auth/sign-in", { email, password });
+            const response = await api.post("/auth/sign-in", { email: normalizedEmail, password });
 
-            localStorage.setItem("token", response.data.token.accessToken);
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+            storeAuthSession(response.data.user, response.data.token);
             navigate("/applications?page=1");
         } catch (err: any) {
-            setMessage(err.response?.data?.message || "Помилка при вході");
+            setMessage(err.response?.data?.message || "Login error");
         }
     };
 
@@ -37,7 +47,10 @@ export const LoginPage = () => {
                             type="email"
                             placeholder="Email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                setMessage("");
+                            }}
                             required
                         />
 
@@ -47,7 +60,10 @@ export const LoginPage = () => {
                             type="password"
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setMessage("");
+                            }}
                             required
                         />
 

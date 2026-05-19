@@ -3,6 +3,12 @@ interface ManagerCreateModalProps {
     name: string;
     surname: string;
     submitting: boolean;
+    errors: {
+        email?: string;
+        name?: string;
+        surname?: string;
+        general?: string;
+    };
     onClose: () => void;
     onEmailChange: (value: string) => void;
     onNameChange: (value: string) => void;
@@ -15,6 +21,7 @@ export const ManagerCreateModal = ({
     name,
     surname,
     submitting,
+    errors,
     onClose,
     onEmailChange,
     onNameChange,
@@ -32,6 +39,7 @@ export const ManagerCreateModal = ({
                         type="email"
                         value={email}
                     />
+                    {errors.email && <span className="admin-field-error">{errors.email}</span>}
                 </label>
 
                 <label className="admin-field">
@@ -41,6 +49,7 @@ export const ManagerCreateModal = ({
                         placeholder="Name"
                         value={name}
                     />
+                    {errors.name && <span className="admin-field-error">{errors.name}</span>}
                 </label>
 
                 <label className="admin-field">
@@ -50,8 +59,11 @@ export const ManagerCreateModal = ({
                         placeholder="Surname"
                         value={surname}
                     />
+                    {errors.surname && <span className="admin-field-error">{errors.surname}</span>}
                 </label>
             </div>
+
+            {errors.general && <p className="admin-modal-error">{errors.general}</p>}
 
             <div className="admin-modal-actions">
                 <button

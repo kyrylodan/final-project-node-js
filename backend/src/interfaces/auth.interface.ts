@@ -3,3 +3,7 @@ export interface ISignIn {
     password: string;
 }
 
+export interface IRefreshTokenRequest {
+    refreshToken: string;
+}
+

@@ -162,6 +162,20 @@ export const openApiDocument = {
                 },
                 required: ["user", "token"],
             },
+            RefreshRequest: {
+                type: "object",
+                properties: {
+                    refreshToken: { type: "string" },
+                },
+                required: ["refreshToken"],
+            },
+            RefreshResponse: {
+                type: "object",
+                properties: {
+                    token: { $ref: "#/components/schemas/TokenPair" },
+                },
+                required: ["token"],
+            },
             AddCommentRequest: {
                 type: "object",
                 properties: {
@@ -201,7 +215,7 @@ export const openApiDocument = {
                     email: { type: "string", format: "email" },
                     name: { type: "string" },
                     surname: { type: "string" },
-                    role: { type: "string", enum: ["manager"] },
+                    role: { type: "string", enum: ["admin", "manager"] },
                     created_at: {
                         type: "string",
                         format: "date-time",
@@ -347,6 +361,38 @@ export const openApiDocument = {
                     },
                     "401": {
                         description: "Invalid credentials",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        "/auth/refresh": {
+            post: {
+                tags: ["Auth"],
+                summary: "Refresh access and refresh tokens",
+                requestBody: {
+                    required: true,
+                    content: {
+                        "application/json": {
+                            schema: { $ref: "#/components/schemas/RefreshRequest" },
+                        },
+                    },
+                },
+                responses: {
+                    "200": {
+                        description: "Tokens refreshed successfully",
+                        content: {
+                            "application/json": {
+                                schema: { $ref: "#/components/schemas/RefreshResponse" },
+                            },
+                        },
+                    },
+                    "401": {
+                        description: "Invalid refresh token",
                         content: {
                             "application/json": {
                                 schema: { $ref: "#/components/schemas/ErrorResponse" },

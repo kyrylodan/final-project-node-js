@@ -26,6 +26,16 @@ const getAdminEmails = () =>
 
 const isAdminAccount = (user: IUser) => getAdminEmails().includes(String(user.email).toLowerCase());
 
+const normalizeStatusForStatistics = (value: string | null | undefined) => {
+    const normalizedStatus = normalizeValue(value).toLowerCase();
+
+    if (!normalizedStatus || normalizedStatus === "new") {
+        return "New";
+    }
+
+    return STATUS_OPTIONS.find((status) => status.toLowerCase() === normalizedStatus) || "";
+};
+
 const buildActionLink = (req: Request, token: string) => {
     const origin = String(req.headers.origin || configs.FRONTEND_URL || "http://localhost:5173")
         .trim()
@@ -174,10 +184,10 @@ export const getApplicationStatistics = async (
         const groupedMap = new Map<string, number>();
 
         for (const item of groupedStatuses) {
-            const status = normalizeValue(item._id);
+            const status = normalizeStatusForStatistics(item._id);
 
             if (status) {
-                groupedMap.set(status, item.count);
+                groupedMap.set(status, (groupedMap.get(status) || 0) + item.count);
             }
         }
 
@@ -200,9 +210,14 @@ export const getManagers = async (req: Request, res: Response, next: NextFunctio
         const page = parsedPage > 0 ? parsedPage : 1;
         const limit = parsedLimit > 0 ? parsedLimit : MANAGERS_PER_PAGE;
         const managerFilter = {
-            email: {
-                $nin: getAdminEmails(),
-            },
+            $or: [
+                { role: "manager" },
+                {
+                    email: {
+                        $in: getAdminEmails(),
+                    },
+                },
+            ],
         };
 
         const totalItems = await User.countDocuments(managerFilter);
